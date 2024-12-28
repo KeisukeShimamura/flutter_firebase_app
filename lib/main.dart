@@ -5,145 +5,173 @@ import 'package:flutter/material.dart';
 
 Future<void> main() async {
   // Firebase初期化
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(MyApp());
+  runApp(ChatApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ChatApp extends StatelessWidget {
+  const ChatApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'ChatApp',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyAuthPage(),
+      home: LoginPage(),
     );
   }
 }
 
-class MyAuthPage extends StatefulWidget {
+// ログイン画面用Widget
+class LoginPage extends StatefulWidget {
   @override
-  _MyAuthPageState createState() => _MyAuthPageState();
+  _LoginPageState createState() => _LoginPageState();
 }
 
-class _MyAuthPageState extends State<MyAuthPage> {
-  // 入力されたメールアドレス
-  String newUserEmail = "";
-  // 入力されたパスワード
-  String newUserPassword = "";
-  // 入力されたメールアドレス（ログイン）
-  String loginUserEmail = "";
-  // 入力されたパスワード（ログイン）
-  String loginUserPassword = "";
-  // 登録・ログインに関する情報を表示
-  String infoText = "";
+class _LoginPageState extends State<LoginPage> {
+  String infoText = '';
+  String email = '';
+  String password = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Container(
-          padding: EdgeInsets.all(32),
-          child: Column(
-            children: <Widget>[
-              TextFormField(
-                // テキスト入力のラベルを設定
-                decoration: InputDecoration(labelText: "メールアドレス"),
-                onChanged: (String value) {
-                  setState(() {
-                    newUserEmail = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                decoration: InputDecoration(labelText: "パスワード（６文字以上）"),
-                // パスワードが見えないようにする
-                obscureText: true,
-                onChanged: (String value) {
-                  setState(() {
-                    newUserPassword = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    // メール/パスワードでユーザー登録
-                    final FirebaseAuth auth = FirebaseAuth.instance;
-                    final UserCredential result =
-                        await auth.createUserWithEmailAndPassword(
-                      email: newUserEmail,
-                      password: newUserPassword,
-                    );
-
-                    // 登録したユーザー情報
-                    final User user = result.user!;
-                    setState(() {
-                      infoText = "登録OK：${user.email}";
-                    });
-                  } catch (e) {
-                    // 登録に失敗した場合
-                    setState(() {
-                      infoText = "登録NG：${e.toString()}";
-                    });
-                  }
-                },
-                child: Text("ユーザー登録"),
-              ),
-              const SizedBox(height: 32),
-              TextFormField(
-                decoration: InputDecoration(labelText: "メールアドレス"),
-                onChanged: (String value) {
-                  setState(() {
-                    loginUserEmail = value;
-                  });
-                },
-              ),
-              TextFormField(
-                decoration: InputDecoration(labelText: "パスワード"),
-                obscureText: true,
-                onChanged: (String value) {
-                  setState(() {
-                    loginUserPassword = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    // メール/パスワードでログイン
-                    final FirebaseAuth auth = FirebaseAuth.instance;
-                    final UserCredential result =
-                        await auth.signInWithEmailAndPassword(
-                      email: loginUserEmail,
-                      password: loginUserPassword,
-                    );
-                    // ログインに成功した場合
-                    final User user = result.user!;
-                    setState(() {
-                      infoText = "ログインOK：${user.email}";
-                    });
-                  } catch (e) {
-                    // ログインに失敗した場合
-                    setState(() {
-                      infoText = "ログインNG：${e.toString()}";
-                    });
-                  }
-                },
-                child: Text("ログイン"),
-              ),
-              const SizedBox(height: 8),
-              Text(infoText)
-            ],
-          ),
+          child: Container(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextFormField(
+              decoration: InputDecoration(labelText: 'メールアドレス'),
+              onChanged: (String value) {
+                setState(() {
+                  email = value;
+                });
+              },
+            ),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'パスワード'),
+              obscureText: true,
+              onChanged: (String value) {
+                setState(() {
+                  password = value;
+                });
+              },
+            ),
+            Container(
+              padding: EdgeInsets.all(8),
+              child: Text(infoText),
+            ),
+            Container(
+              width: double.infinity,
+              child: ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      // メール/パスワードでユーザ登録
+                      final FirebaseAuth auth = FirebaseAuth.instance;
+                      final result = await auth.createUserWithEmailAndPassword(
+                          email: email, password: password);
+                      // ユーザー登録に成功した場合、チャット画面に遷移
+                      await Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (context) {
+                        return ChatPage(result.user!);
+                      }));
+                    } catch (e) {
+                      setState(() {
+                        infoText = "登録に失敗しました：${e.toString()}";
+                      });
+                    }
+                  },
+                  child: Text('ユーザー登録')),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              child: OutlinedButton(
+                  onPressed: () async {
+                    try {
+                      // メール/パスワードでログイン
+                      final FirebaseAuth auth = FirebaseAuth.instance;
+                      final result = await auth.signInWithEmailAndPassword(
+                          email: email, password: password);
+                      // チャット画面に遷移＋ログイン画面を破棄
+                      await Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) {
+                          return ChatPage(result.user!);
+                        }),
+                      );
+                    } catch (e) {
+                      setState(() {
+                        infoText = "ログインに失敗しました：${e.toString()}";
+                      });
+                    }
+                  },
+                  child: Text('ログイン')),
+            ),
+          ],
         ),
+      )),
+    );
+  }
+}
+
+class ChatPage extends StatelessWidget {
+  // 引数からユーザー情報を受け取れるようにする
+  ChatPage(this.user);
+  // ユーザー情報
+  final User user;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('チャット'),
+        actions: <Widget>[
+          IconButton(
+              onPressed: () async {
+                // ログアウト処理
+                await FirebaseAuth.instance.signOut();
+                // ログイン画面に遷移＋チャット画面を破棄
+                await Navigator.of(context)
+                    .pushReplacement(MaterialPageRoute(builder: (context) {
+                  return LoginPage();
+                }));
+              },
+              icon: Icon(Icons.logout))
+        ],
+      ),
+      body: Center(
+        child: Text('ログイン情報：${user.email}'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          // 投稿画面に遷移
+          await Navigator.of(context)
+              .push(MaterialPageRoute(builder: (context) {
+            return AddPostPage();
+          }));
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AddPostPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('チャット投稿')),
+      body: Center(
+        child: ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('戻る')),
       ),
     );
   }
